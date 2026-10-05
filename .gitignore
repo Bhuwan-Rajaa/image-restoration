@@ -1,0 +1,15 @@
+# Ignore dataset and large model checkpoints
+restoration_dataset/
+checkpoints/
+damage dataset/
+data/
+original dataset, intel image classification/
+phases info/
+external/
+__pycache__/
+*.pth
+*.pt
+.venv/
+env/
+.idea/
+.vscode/

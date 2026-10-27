@@ -27,12 +27,16 @@ damaged_photos/
 /assets/
 /debug_samples/
 
-# Reports and papers remain local
-/reports and papers/
-/PROJECT_REPORT.md
+# Draft papers and archived report tooling remain local
+/reports and papers/*
+!/reports and papers/final/
 /project.md
 /src/reporting/
 *.pdf
 *.doc
 *.docx
 *.tex
+
+# Publish the completed paper documents
+!/reports and papers/final/*.pdf
+!/reports and papers/final/*.docx

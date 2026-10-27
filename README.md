@@ -10,8 +10,13 @@ validation selected epoch 119. These scores describe this synthetic urban-image
 benchmark; real photograph quality requires separate assessment.
 
 This repository contains the active source code, configurations, launchers, and tests.
-Datasets, checkpoints, generated outputs, archived experiments, and final reports
-or papers are kept locally and are excluded from Git.
+Datasets, checkpoints, generated outputs, and archived experiments are kept
+locally and are excluded from Git.
+
+The [complete technical report](PROJECT_REPORT.md) and final papers are included:
+
+- [IEEE PDF](reports%20and%20papers/final/film_damage_restoration_ieee_final.pdf) and [Word document](reports%20and%20papers/final/film_damage_restoration_ieee_final.docx)
+- [Springer PDF](reports%20and%20papers/final/film_damage_restoration_springer_final.pdf) and [Word document](reports%20and%20papers/final/film_damage_restoration_springer_final.docx)
 
 ## Restore an image
 

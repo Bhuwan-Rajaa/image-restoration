@@ -45,14 +45,14 @@ def random_perlin_with_numpy(num_samples, noise_array):
     return x, y
 
 class DamageSimulatorAdapter:
-    def __init__(self, assets_dir="d:/MV/damage dataset"):
+    def __init__(self, assets_dir="d:/MV/damage dataset", artifact_types=None):
         self.assets_dir = Path(assets_dir)
-        self.artifact_types = ['dirt', 'dots', 'scratches', 'smut', 'spots', 'sprinkles', 'stain']
+        self.artifact_types = artifact_types or ['dirt', 'dots', 'scratches', 'smut', 'spots', 'sprinkles', 'stain', 'hair', 'hair-short']
         self.assets = {}
         for atype in self.artifact_types:
             folder = self.assets_dir / atype
             if folder.exists():
-                images = list(folder.glob("*.png"))
+                images = sorted(folder.glob("*.png"))
                 self.assets[atype] = images
             else:
                 self.assets[atype] = []
@@ -91,18 +91,26 @@ class DamageSimulatorAdapter:
             # For 256x256, a few artifacts are enough
             if atype in ['dots', 'sprinkles']:
                 count = int(random.randint(5, 15) * count_multiplier)
-            elif atype == 'scratches':
-                count = int(random.randint(1, 3) * count_multiplier)
+            elif atype in ['scratches', 'hair', 'hair-short']:
+                count = max(1, int(random.randint(1, 3) * count_multiplier))
             else:
                 count = int(random.randint(2, 6) * count_multiplier)
 
-            positions_x, positions_y = random_perlin_with_numpy(count, perlin_noise)
+            # unravel_index returns row, column (y, x). Swapping these can put
+            # marks outside the canvas when a photo is not square.
+            positions_y, positions_x = random_perlin_with_numpy(count, perlin_noise)
 
             for i in range(count):
                 asset_path = self.get_random_asset(atype)
                 if not asset_path: continue
                 
                 asset_img = Image.open(asset_path).convert("RGBA")
+                # Centre the actual mark rather than its transparent 400px canvas.
+                # This is especially important for short hairs near canvas edges.
+                bounds = asset_img.getchannel('A').getbbox()
+                if bounds is None:
+                    continue
+                asset_img = asset_img.crop(bounds)
                 
                 # Random rotation
                 angle = random.uniform(0, 360)
@@ -112,6 +120,10 @@ class DamageSimulatorAdapter:
                 scale = random.uniform(0.1, 0.5) 
                 if atype == 'scratches':
                     scale = random.uniform(0.5, 1.2) # Scratches can be larger
+                elif atype == 'hair':
+                    scale = random.uniform(0.35, 0.75)
+                elif atype == 'hair-short':
+                    scale = random.uniform(0.25, 0.6)
                 
                 new_size = (int(asset_img.width * scale), int(asset_img.height * scale))
                 if new_size[0] <= 0 or new_size[1] <= 0: continue
@@ -147,7 +159,7 @@ class DamageSimulatorAdapter:
 
         return mask
 
-    def apply_damage(self, clean_img_np, mask_np, strength=0.6):
+    def apply_damage(self, clean_img_np, mask_np, strength=0.6, polarity='bright'):
         """
         clean_img_np: RGB image numpy array (H, W, 3), range 0-255
         mask_np: Grayscale mask numpy array (H, W), 255=clean, 0=damaged
@@ -158,7 +170,10 @@ class DamageSimulatorAdapter:
         
         # Add damage as bright marks (simulate film scratches scattering light)
         mask_norm = np.expand_dims(mask_norm, axis=-1)
-        damaged = clean_img_np + strength * 255.0 * (1.0 - mask_norm)
+        if polarity not in ('bright', 'dark'):
+            raise ValueError(f"Unknown damage polarity: {polarity}")
+        direction = 1.0 if polarity == 'bright' else -1.0
+        damaged = clean_img_np + direction * strength * 255.0 * (1.0 - mask_norm)
         
         damaged = np.clip(damaged, 0, 255).astype(np.uint8)
         return damaged

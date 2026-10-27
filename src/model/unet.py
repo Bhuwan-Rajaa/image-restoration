@@ -33,10 +33,10 @@ class ResNetUNet(nn.Module):
     U-Net architecture with ResNet34 encoder for Transfer Learning.
     Matches the architecture style used in DustScratchRemoval.
     """
-    def __init__(self, n_channels=3, n_classes=3):
+    def __init__(self, n_channels=3, n_classes=3, pretrained=True):
         super().__init__()
         # Load pretrained ResNet34
-        resnet = resnet34(weights=ResNet34_Weights.DEFAULT)
+        resnet = resnet34(weights=ResNet34_Weights.DEFAULT if pretrained else None)
         
         # Encoder (Freezing initially can be handled in training script)
         self.inc = nn.Sequential(resnet.conv1, resnet.bn1, resnet.relu, resnet.maxpool) # out: 64, H/4, W/4

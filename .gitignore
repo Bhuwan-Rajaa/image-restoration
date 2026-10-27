@@ -13,3 +13,26 @@ __pycache__/
 env/
 .idea/
 .vscode/
+restoration_dataset_v2/
+runs/
+.pytest_cache/
+demo_results/
+damaged_photos/
+
+# Local datasets, generated artifacts, and archived experiments
+/Google_maps-images/
+/demo/
+/results/
+/old/
+/assets/
+/debug_samples/
+
+# Reports and papers remain local
+/reports and papers/
+/PROJECT_REPORT.md
+/project.md
+/src/reporting/
+*.pdf
+*.doc
+*.docx
+*.tex

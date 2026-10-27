@@ -1,0 +1,11 @@
+# Versions verified in the current Windows / Python 3.11 environment.
+# CUDA wheels need the PyTorch cu121 index; see TRAINING.md.
+torch==2.5.1+cu121
+torchvision==0.20.1+cu121
+numpy==2.2.6
+Pillow==10.1.0
+PyYAML==6.0.1
+opencv-python==5.0.0.93
+scikit-image==0.26.0
+matplotlib==3.10.8
+tqdm==4.66.1

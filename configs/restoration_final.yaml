@@ -1,0 +1,38 @@
+seed: 42
+dataset:
+  clean_splits: data/clean_splits
+  assets: damage dataset
+  output: restoration_dataset_v2
+  image_size: 256
+  variants: 2
+  workers: 4
+  artifact_types: [dirt, dots, scratches, smut, spots, sprinkles, stain, hair, hair-short]
+  severities: [light, medium]
+training:
+  run_dir: runs/restoration_final
+  batch_size: 4
+  workers: 2
+  amp: true
+  warmup_epochs: 0
+  reconstruction_epochs: 1
+  refinement_epochs: 84
+  max_total_epochs: 120
+  patience: 20
+  min_delta: 0.00001
+  decoder_lr: 0.00002
+  encoder_lr: 0.000002
+  refinement_lr: 0.00002
+  weight_decay: 0.00001
+  ssim_weight: 0.2
+  perceptual_weight: 0.02
+  perceptual_ramp_epochs: 1
+  identity_probability: 0.05
+  preview_samples: 6
+  preview_every: 5
+final_training:
+  initial_checkpoint: runs/restoration_v2/best.pt
+  additional_epochs: 85
+  mask_weight: 0.1
+  hair_sample_weight: 2.0
+  export: checkpoints/final_restoration.pt
+  evaluate_after_training: true

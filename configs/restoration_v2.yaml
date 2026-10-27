@@ -1,0 +1,32 @@
+# Paths are relative to the project root, not the current working directory.
+seed: 42
+dataset:
+  clean_splits: data/clean_splits
+  assets: damage dataset
+  output: restoration_dataset_v2
+  image_size: 256
+  variants: 2
+  workers: 4
+  artifact_types: [dirt, dots, scratches, smut, spots, sprinkles, stain, hair, hair-short]
+  severities: [light, medium]
+training:
+  run_dir: runs/restoration_v2
+  batch_size: 4
+  workers: 2
+  amp: true
+  warmup_epochs: 5
+  reconstruction_epochs: 60
+  refinement_epochs: 20
+  max_total_epochs: 120
+  patience: 10
+  min_delta: 0.0001
+  decoder_lr: 0.0002
+  encoder_lr: 0.00002
+  refinement_lr: 0.00002
+  weight_decay: 0.00001
+  ssim_weight: 0.2
+  perceptual_weight: 0.02
+  perceptual_ramp_epochs: 5
+  identity_probability: 0.1
+  preview_samples: 4
+  preview_every: 5

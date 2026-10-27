@@ -1,101 +1,121 @@
-# 🎞️ Image Restoration using U-Net & Perceptual Loss
+# Image restoration with a residual ResNet34 U-Net
 
-![Architecture](architecture%20diag.png)
+Restore RGB photographs affected by synthetic film damage: dirt, dots,
+scratches, smut, spots, sprinkles, stain, long hair, and short hair.
 
-An advanced Deep Learning project aimed at restoring heavily damaged images by removing synthetic and natural film defects, such as scratches, dirt, spots, stains, and smut. 
+**The final model is trained and available locally.** On 1,654 held-out synthetic
+test pairs it achieved **38.5015 dB PSNR and 0.985564 SSIM**, compared with
+25.0674 dB / 0.908485 for the damaged inputs. Training completed 120 total epochs;
+validation selected epoch 119. These scores describe this synthetic urban-image
+benchmark; real photograph quality requires separate assessment.
 
-This repository explores the intricacies of image restoration using a **ResNet U-Net** architecture and directly confronts the well-documented **Perception-Distortion Tradeoff** by comparing mathematically optimal loss functions (L1) against perceptually optimal loss functions (VGG16 Perceptual & SSIM).
+This repository contains the active source code, configurations, launchers, and tests.
+Datasets, checkpoints, generated outputs, archived experiments, and final reports
+or papers are kept locally and are excluded from Git.
 
----
+## Restore an image
 
-## 📖 Project Overview
+Drag an image onto [restore_image.bat](restore_image.bat) on Windows, or run:
 
-When dealing with historical film or damaged photographs, digital restoration is a highly complex task. Traditional convolutional networks trained with standard pixel-wise loss functions (like L1 or L2) tend to produce blurry images. They average out the uncertainty of high-frequency textures, destroying the natural "feel" of the image.
+```powershell
+python restore_image.py "D:\Photos\damaged.jpg"
+```
 
-**The Goal:** Build an architecture that not only removes the damage but also synthesizes the underlying textures (e.g., bricks, road gravel) to make the image look sharp and realistic to the human eye.
+The default model is `checkpoints/final_restoration.pt`. Output is saved beside
+the source as `damaged_restored.png`; repeated runs use numbered filenames.
+Running without an image path opens a text prompt. An explicit output must be a
+new PNG filename:
 
----
+```powershell
+python restore_image.py "D:\Photos\damaged.jpg" --output "D:\Photos\restored.png"
+python restore_image.py "D:\Photos\damaged.jpg" --device cpu
+```
 
-## 🏗️ Model Architecture
+Inference works offline with local weights, uses CUDA when available, preserves
+the oriented image dimensions, and processes large images in overlapping tiles.
+Grayscale inputs produce grayscale output. Transparency is composited on white.
 
-The core architecture relies on a **ResNet U-Net** structure, heavily utilizing transfer learning to bootstrap the network's understanding of natural images.
+## Create synthetic damage
 
-### 1. The Encoder (ResNet-34 Feature Extractor)
-The contracting path utilizes a pretrained **ResNet** backbone. Because this model was trained on millions of images (ImageNet), it already possesses a deep semantic understanding of natural image features, edges, and object structures. 
-- During the initial training phase, the weights of this encoder are **frozen**. It acts purely as a robust feature extractor, interpreting the corrupted image without destroying its pretrained weights.
+Drag a photo onto [damage_image.bat](damage_image.bat) for an interactive menu,
+or specify the choices directly:
 
-### 2. The Decoder (U-Net Upsampling)
-The expansive path consists of transposed convolutions that rebuild the spatial resolution of the image.
-- **Skip Connections:** The key to the U-Net's success. High-resolution, early-layer feature maps from the ResNet encoder are concatenated directly with the upsampled features in the decoder. This allows the model to perfectly retain spatial details (like the sharp corner of a window) while the network focuses purely on generating repaired pixels over the damaged areas.
+```powershell
+python damage_image.py "D:\Photos\photo.jpg" --types scratches hair --severity medium --seed 42 --output-dir "D:\Photos\damaged"
+```
 
----
+Types: `dirt`, `dots`, `scratches`, `smut`, `spots`, `sprinkles`, `stain`, `hair`,
+`hair-short`. Severities: `light`, `medium`, `heavy`. Training used light and
+medium damage. Each generation saves a damaged PNG, mask PNG, and JSON settings.
+On disk, **black means damage and white means clean**. The default output folder
+is `damaged_photos/`. Existing output files receive numbered names.
 
-## 🔬 The Perception-Distortion Tradeoff & Loss Functions
+## Environment
 
-This project acts as an ablation study of the **Perception-Distortion Tradeoff**. We trained three separate models for 50 epochs each, isolated by their loss functions:
+The recorded training environment used Python 3.11, PyTorch 2.5.1+cu121,
+torchvision 0.20.1+cu121, and an NVIDIA RTX 4050 Laptop GPU. Package versions are
+recorded in [requirements-v2.txt](requirements-v2.txt). The existing machine
+already has the environment. To reproduce it in a compatible environment:
 
-### 1. Baseline Model (L1 / Mean Absolute Error Loss)
-- **Mechanism:** Computes the absolute pixel-by-pixel difference between the restored image and the ground truth.
-- **Result:** Achieves the best mathematical scores (highest PSNR). However, it heavily penalizes any deviation in high-frequency textures. To minimize the error, the model "plays it safe" and outputs a blurry, smoothed average of complex textures.
+```powershell
+python -m pip install -r requirements-v2.txt --extra-index-url https://download.pytorch.org/whl/cu121
+```
 
-### 2. Perceptual Model (VGG16 Feature Loss)
-- **Mechanism:** Instead of comparing raw pixels, this loss feeds both the restored image and the clean image into a secondary, pretrained **VGG16 network**. It extracts deep feature maps from 5 specific ReLU layers. The loss is calculated as the distance between these feature maps (content) and their Gram matrices (style).
-- **Result:** Forces the model to synthesize highly realistic and sharp textures. However, because these hallucinated textures don't align pixel-for-pixel with the original, mathematical metrics like PSNR inherently drop.
+The checkpoint, datasets, run artifacts, and damage assets are local files;
+many are excluded from Git. A source checkout alone may not contain them.
 
-### 3. Perceptual + SSIM Loss Model
-- **Mechanism:** Combines the VGG16 Perceptual loss with a **Structural Similarity Index (SSIM)** loss. The SSIM loss calculates the structural integrity, luminance, and contrast within a 5x5 sliding Gaussian window.
-- **Result:** Explicitly forces the model to preserve sharp edges and local structures. It yields the best qualitative visual results, balancing realistic texture generation with structural preservation. 
-- *Note: Due to the complex mathematical landscape of combining feature-loss and SSIM-loss, this model requires significantly more training epochs to fully converge compared to the pure L1 baseline.*
+## Current project map
 
----
+| Location | Purpose |
+|---|---|
+| `restore_image.py`, `restore_image.bat` | Restore user images |
+| `damage_image.py`, `damage_image.bat` | Generate synthetic damage |
+| `checkpoints/final_restoration.pt` | Final inference export |
+| `configs/restoration_final.yaml` | Final training configuration |
+| `configs/restoration_v2.yaml` | Parent training and preparation configuration |
+| `src/dataset/` | Current damage adapter and lossless pair preparation |
+| `src/model/` | Architecture, losses, training, evaluation, inference |
+| `data/clean_splits/` | Source photographs split before corruption |
+| `damage dataset/` | PNG artifact assets used by generation |
+| `restoration_dataset_v2/` | Current aligned clean/damaged/mask pairs |
+| `runs/restoration_v2/` | Parent checkpoint and 35-epoch training history |
+| `runs/restoration_final/` | Final 85-epoch continuation, checkpoints, status |
+| `results/final_model/` | Final test metrics and 20 comparison images |
+| `results/project_report/` | Report statistics and charts in PNG/PDF/SVG |
+| `tests/` | Existing regression checks |
 
-## 📊 Dataset Synthesis
+## Evaluation and training reference
 
-The model was trained on a custom dataset of **7,000+ images** generated via a specialized pipeline.
-- Clean images were sourced from urban environments (Buildings and Streets).
-- Images were synthetically corrupted with "Light" and "Medium" severity artifacts to simulate real-world film damage (Dirt, Scratches, Smut, Spots, Stains, and Sprinkles).
-- A 70/15/15 train-validation-test split was enforced.
+The completed evaluation is stored locally at `results/final_model/metrics.json`.
+To run another evaluation and save a separate result:
 
----
+```powershell
+python src/model/evaluate.py --dataset_dir restoration_dataset_v2 --checkpoint checkpoints/final_restoration.pt --output_json results/final_model/recomputed_metrics.json
+```
 
-## 📈 Quantitative Evaluation
+The final run is complete. Its status is recorded in
+`runs/restoration_final/status.json`.
+For an interrupted copy of this run, the resume command is:
 
-As expected by the Perception-Distortion tradeoff, the Baseline model dominates the mathematical metrics, while the Perceptual models sacrifice pixel-wise accuracy for visual sharpness.
+```powershell
+python src/model/train_final.py --config configs/restoration_final.yaml --resume runs/restoration_final/last.pt
+```
 
-| Metric | Damaged Input | Baseline Model (L1) | Perceptual (P1) | SSIM Model |
-|--------|---------------|----------------|-----------------|------------|
-| **PSNR** | 20.91 | **24.14** | 18.35 | 18.77 |
-| **SSIM** | 0.850 | **0.787** | 0.569 | 0.606 |
-| **MAE** | 0.047 | **0.043** | 0.096 | 0.091 |
-| **MSE** | 0.018 | **0.004** | 0.015 | 0.013 |
+Use a separate configuration and unused run directory for a new experiment.
 
----
+Prepare data and start parent training with:
 
-## 🖼️ Qualitative Results (Visual Comparisons)
+```powershell
+python src/dataset/prepare_v2.py --config configs/restoration_v2.yaml
+python src/model/train_v2.py --config configs/restoration_v2.yaml
+```
 
-*(Format: Clean Image | Damaged Image | Damage Mask | Restored Output)*
+Provide the source photographs under `data/clean_splits/` and damage assets under
+`damage dataset/` before preparation. Training and inference require the local
+files named in their configurations; they are not downloaded with this repository.
 
-### 1. Baseline Model (L1 Loss)
-*Notice the slight blurring and "watercolor" smoothing effect in heavily textured areas (over-smoothed to minimize pixel error).*
+Run the regression checks with:
 
-| Sample 1 | Sample 2 | Sample 3 |
-|:---:|:---:|:---:|
-| ![Base 1](assets/baseline_1.png) | ![Base 2](assets/baseline_2.png) | ![Base 3](assets/baseline_3.png) |
-
-
-### 2. Perceptual Model (VGG16 Loss)
-*Notice the improved texture synthesis and sharper details. The model actively tries to reconstruct realistic surfaces.*
-
-| Sample 1 | Sample 2 | Sample 3 |
-|:---:|:---:|:---:|
-| ![P1 1](assets/p1_1.png) | ![P1 2](assets/p1_2.png) | ![P1 3](assets/p1_3.png) |
-
-
-### 3. SSIM + Perceptual Model
-*The best qualitative performer. It balances realistic texture generation with structural preservation (preventing edges from becoming warped).*
-
-| Sample 1 | Sample 2 | Sample 3 |
-|:---:|:---:|:---:|
-| ![SSIM 1](assets/ssim_1.png) | ![SSIM 2](assets/ssim_2.png) | ![SSIM 3](assets/ssim_3.png) |
-
----
+```powershell
+python -m unittest discover -s tests
+```

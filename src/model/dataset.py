@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 
 class RestorationDataset(Dataset):
-    def __init__(self, metadata_path, dataset_dir="d:/MV/restoration_dataset", transform=None, is_train=False):
+    def __init__(self, metadata_path, dataset_dir=str(Path(__file__).resolve().parents[2] / 'restoration_dataset_v2'), transform=None, is_train=False):
         """
         metadata_path: Path to the split JSON (e.g., train.json)
         dataset_dir: Base directory of the dataset
